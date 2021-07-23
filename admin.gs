@@ -100,16 +100,48 @@ function updateInfrastructure() {
   storePreviousOrderers()
 }
 
+
+//##############################
+
+//functions to break down the DB cells on the infrastructure sheet and paste them to the new sheets
+function previousLocationBreakdown(){
+  const stringCell = SpreadsheetApp.getActive().getSheetByName('Infrastructure').getRange(15, 2);
+  var newSheetTitle = 'Previous Locations DB';
+  dissasembleArray(stringCell,newSheetTitle);
+}
+
+function previousOrderersBreakdown(){
+  const stringCell = SpreadsheetApp.getActive().getSheetByName('Infrastructure').getRange(16, 2);
+  var newSheetTitle = 'Previous Orderers DB';
+  dissasembleArray(stringCell,newSheetTitle);
+}
+
+//dissasembles the string cell into its own rows and columns
+function dissasembleArray(stringCell, newSheet){
+  var jsonObject = stringCell.getValue();
+  var jsonarray = JSON.parse(jsonObject);
+  var finalArray = []
+  jsonarray.forEach(function (row){finalArray.push([row])})
+
+  Logger.log(jsonarray);
+  var db = SpreadsheetApp.getActive().getSheetByName(newSheet);
+  db.getRange(1,1,finalArray.length,finalArray[0].length).setValues(finalArray)
+}
+
+//##############################
+
+
 // Saves a stringified array of filtered copy attys in Infrastructure sheet
 function storeCopyAttys() {
-  const stringCell = SpreadsheetApp.getActive().getSheetByName('Infrastructure').getRange(14, 2)
-  const deposSheet = SpreadsheetApp.getActive().getSheetByName('Schedule a depo')
+  const dataBaseSheet = SpreadsheetApp.getActive().getSheetByName('Copy Atty DB');
+  const deposSheet = SpreadsheetApp.getActive().getSheetByName('Schedule a depo');
   
   /** Loops through schedule a depo and does magic to create an array of copy attys ready to be stringified and stored */
-  const rawCopyAttys = deposSheet.getRange(2, 28, deposSheet.getLastRow(), 9).getValues()
-  const namesArray = []
-  const filteredArray = []
+  const rawCopyAttys = deposSheet.getRange(2, 28, deposSheet.getLastRow(), 9).getValues();
+  const namesArray = [];
+  const filteredArray = [];
   
+  //for each copy atty in the depo sheet, if the name is not blank and if the names array does not contain this copy atty already, add it to the names array and to the filtered array.
   rawCopyAttys.forEach(function(atty) {
     if (atty[0] !== '') {
       if (!namesArray.some(name => name === atty[0])) {
@@ -135,20 +167,22 @@ function storeCopyAttys() {
     return 0;
   });
   
-  // Stores the array in 
-  let value = JSON.stringify(sortedCopyAttys)
-  stringCell.setValue(value)
+  //Writes the array to the designated page
+  dataBaseSheet.getRange(1,1,sortedCopyAttys.length,sortedCopyAttys[0].length).setValues(sortedCopyAttys);
 }
 
 // Gets array of copy attys / called by sidebar initiator functions used to add depos
 function returnCopyAttys() {
-  const stringCell = SpreadsheetApp.getActive().getSheetByName('Infrastructure').getRange(14, 2).getValue().toString()
-  return JSON.parse(stringCell)
+  var stringCell = SpreadsheetApp.getActive().getSheetByName('Copy Atty DB').getDataRange().getValues();
+  Logger.log('Copy Atty Loaded');
+  return stringCell;
 }
+
+
 
 // Saves a stringified array of filtered previous locations in Infrastructure sheet
 function storePreviousLocations() {
-  const stringCell = SpreadsheetApp.getActive().getSheetByName('Infrastructure').getRange(15, 2)
+  const dataBaseSheet = SpreadsheetApp.getActive().getSheetByName('Previous Locations DB');
   const deposSheet = SpreadsheetApp.getActive().getSheetByName('Schedule a depo')
   
   /** Loops through schedule a depo and does magic to create an array of copy attys ready to be stringified and stored */
@@ -181,53 +215,65 @@ function storePreviousLocations() {
     return 0;
   });
   
-  // Stores the array in 
-  let value = JSON.stringify(sortedLocations)
-  stringCell.setValue(value)
+  //Writes the array to the designated page
+  dataBaseSheet.getRange(1,1,sortedLocations.length,sortedLocations[0].length).setValues(sortedLocations);
 }
 
 // Gets array of locations / called by sidebar initiator functions used to add depos
 function returnLocations() {
-  const stringCell = SpreadsheetApp.getActive().getSheetByName('Infrastructure').getRange(15, 2).getValue().toString()
-  return JSON.parse(stringCell)
+  var stringCell = SpreadsheetApp.getActive().getSheetByName('Previous Locations DB').getDataRange().getValues();  
+  Logger.log("Locations Loaded");
+  return stringCell
 }
+
+
+
 
 // Stores a clean (no dupes, sorted by First Name) array of previous  orderers as a JSON string in infrastructure for fast recall
 function storePreviousOrderers () {
-  var ss = SpreadsheetApp.getActive()
-  const stringCell = SpreadsheetApp.getActive().getSheetByName('Infrastructure').getRange(16, 2)
-  var depoSheet = ss.getSheetByName('Schedule a depo');
+  const dataBaseSheet = SpreadsheetApp.getActive().getSheetByName('Previous Orderers DB');
+  var depoSheet = SpreadsheetApp.getActive().getSheetByName('Schedule a depo');
+
   var lastDepoSheetRow = depoSheet.getLastRow();
   var rawOrdererData = depoSheet.getRange(2, 4, lastDepoSheetRow, 1).getValues();
-  
   // Creates a 2d array of previous orderers.
   var firstLevelArray = [];
   rawOrdererData.forEach(function(element) {
     firstLevelArray.push(element[0]);
   });
-  
   /** Removes all elements that are empty strings from an array
   */
   function isntEmpty (element) {
-  return element != '';
+    return element != '';
   };
   
   // Filter out empty strings, remove duplicate elements, and sort the array
   var firstLevelEmptiesRemoved = firstLevelArray.filter(isntEmpty);
-  
+
   var uniqueArray = firstLevelEmptiesRemoved.filter(function(elem, index, self) {
     return index === self.indexOf(elem);
   });
   
   var sortedUniqueArray = uniqueArray.sort();
-  
-  stringCell.setValue(JSON.stringify(sortedUniqueArray))
+
+  //Convert back to an array of arrays, which will allow us to store it in the sheets
+  var finalArray = [];
+  sortedUniqueArray.forEach(element => finalArray.push([element]));
+
+  //Writes the array to the designated page
+  dataBaseSheet.getRange(1,1,finalArray.length,finalArray[0].length).setValues(finalArray);
 };
 
 // Gets array of previous orderers / called by sidebar initiator functions used to add depos
 function returnPreviousOrderers() {
-  const stringCell = SpreadsheetApp.getActive().getSheetByName('Infrastructure').getRange(16, 2).getValue().toString()
-  return JSON.parse(stringCell)
+  var dbArray = SpreadsheetApp.getActive().getSheetByName('Previous Orderers DB').getDataRange().getValues();
+
+  var stringCell = [];
+  for(var i=0;i<dbArray.length;i++){
+    stringCell.push(dbArray[i][0]);
+  }
+  Logger.log("Previous Orderer's Loaded");
+  return stringCell;
 }
 
 
@@ -295,4 +341,11 @@ function deleteScriptProps() {
   var keys = PropertiesService.getScriptProperties().deleteAllProperties();
 };
 
-
+/** Provides visibility into Script Properties values. */
+function seeDocumentPropsValues() {
+  var keys = PropertiesService.getDocumentProperties().getKeys();
+  keys.forEach(function(key) {
+    var value = PropertiesService.getDocumentProperties().getProperty(key);
+    Logger.log(value);
+  });
+};

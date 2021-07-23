@@ -1,4 +1,3 @@
-
 ////////////////////////////////////////////////////////////////////////////////////
 ///////////////// INTERACTIONS BETWEEN SHEET AND SERVICES CALENDAR /////////////////
 ////////////////////////////////////////////////////////////////////////////////////
@@ -26,19 +25,10 @@ function addEvent(orderedBy, witnessName, caseStyle, depoDate, depoHour, depoMin
       description = 'Witness Name: ' + witnessName + '\nCase Style: ' + caseStyle + '\nOrdered by: ' + orderedBy + '\n\nCSR: ' + courtReporter + '\nVideographer: ' + videographer + '\nPIP: ' + pip + '\n\nLocation: ' + '\n' + depoLocation + '\n\nOur client:\n' + attorney + '\n' + firm + '\n' + firmAddress1 + ' ' + firmAddress2 + '\n' + city + ' ' + state + ' ' + zip;
     };
     
-    // Subtracts one hour from depo hour, because for some reason this script is an hour off and I can't figure out why. I know this is hacky.
-    /**
-    depoHour = parseInt(depoHour, 10);
-    if (depoHour !== 1) {
-      depoHour--
-    } else {
-      depoHour = 12;
-    };
-    */
     
     // Add the deposition event to the Services calendar
     var formattedDate = toStringDate(depoDate);
-    var formattedHours = to24Format(depoHour, depoMinute, amPm);
+    var formattedHours = to24Format(depoHour, depoMinute, amPm, depoDate);
     var formattedDateAndHour = formattedDate + ' ' + formattedHours;
     
     var event = SACal.createEvent(title, 
@@ -410,16 +400,40 @@ function syncWithCurrentList(editRow, editColumn) {
 @param {depoHour} string Integer from 1-12 entered by SA Legal Solutions from sidebar.
 @param {depoMinute} string Integer from 0-60 entered by SA Legal Solutions from sidebar.
 @param (amPm} string AM or PM as entered by SA Legal Solutions from sidebar.
-@return Hour in 24-hour format plus central time zone (e.g. 16:30:00 CST).
+@param {date} string dat in format '2021-06-18' entered by SA Legal Solutions from sidebar.
+@return Hour in 24-hour format plus correct timezone (e.g. 16:30:00 GMT-5).
 */
-function to24Format (depoHour, depoMinute, amPm) {
+function to24Format (depoHour, depoMinute, amPm,date) {
   var hour = parseInt(depoHour, 10);
   if (amPm === 'PM' && hour !== 12) {
     hour += 12;
   };
-  var formattedTime = hour + ':' + depoMinute + ':00 CST';
+  //var timezone = "CST";
+  var timezone = daylightTest(date);
+
+  var formattedTime = hour + ':' + depoMinute + ':00 '+timezone;
   return formattedTime;
 };
+
+/*date of meeting is compared to daylight savings time
+@param {date} string in the form of "MM-DD-YYYY"
+@return string representign the correct itmezone based on daylight savings time
+*/
+function daylightSavingsTime(date){
+  var response = UrlFetchApp.fetch('http://worldtimeapi.org/api/timezone/america/north_dakota/center');
+  var responseJSON = JSON.parse(response.getContentText());
+  var dstStart = new Date(responseJSON.dst_from);
+  var dstEnd = new Date(responseJSON.dst_until);
+  var eventDate = new Date(date)
+  var compare = eventDate<dstEnd&&eventDate>dstStart;
+  if(compare == true){
+    var daylightTime = 'CDT';
+  }else{
+    var daylightTime = 'CST';
+  }
+  return daylightTime;
+}
+
 
 /** Converts YYYY-MM-DD into string date format
 @param {depoDate} Date in YYYY-MM-DD format.
@@ -637,3 +651,53 @@ function createTitleString(row) {
   var eventTitle = '(' + services + ')' + firmName + ' - ' + witness;
   return eventTitle;
 };
+
+
+/** Takes in a the calendar date for a meeting and, 
+ * using the stored daylight savings start and end times,
+ * returns the GMT timezone if the date falls within daylight savings time
+ *this allows the script to properly schedule timing
+ */
+function daylightTest(date){
+  date = new Date(date);
+  //date = new Date();
+  Logger.log("date is "+date)
+  var dstStart = new Date(PropertiesService.getDocumentProperties().getProperty('daylightStart'));
+  var dstEnd = new Date(PropertiesService.getDocumentProperties().getProperty('daylightEnd'));
+  var compare = date<dstEnd&&date>dstStart;
+
+  Logger.log('daylight savings is '+dstStart+" until "+dstEnd)
+
+  //return CDT (daylight time) if the date falls during daylight savings, and CST if it does not
+  if(compare == true){
+    var daylightTime = 'GMT-05:00';
+  }else{
+    var daylightTime = 'GMT-06:00';
+  }
+
+  return daylightTime;
+}
+
+/**designed to run once per week, 
+ * this function will get the daylight savings dates from worldtimeapi.com
+ * stores the start and stop dates as DOCUMENT properties
+ * cannot use script properties as those are used for customer logs
+ */
+
+function daylightSavingsWeeklyUpdate(){
+  date = new Date();
+  Logger.log(date);
+
+  var response = UrlFetchApp.fetch('http://worldtimeapi.org/api/timezone/america/north_dakota/center');
+  var responseJSON = JSON.parse(response.getContentText());
+  var dstStart = new Date(responseJSON.dst_from);
+  var dstEnd = new Date(responseJSON.dst_until);
+
+  properties = PropertiesService.getDocumentProperties();
+
+  properties.setProperties({
+  'daylightStart': dstStart,
+  'daylightEnd': dstEnd,
+  });
+  Logger.log(properties.getProperty('daylightEnd'))
+}

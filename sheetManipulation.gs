@@ -610,16 +610,3 @@ function test() {
   var currentList = ss.getSheetByName('Current List');
   currentList.getRange(2, 1, currentList.getLastRow(), currentList.getLastColumn()).sort(1)
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

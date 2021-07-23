@@ -87,6 +87,21 @@ function checkLogin () {
   Logger.log(Session.getActiveUser().getEmail());
 };
 
+//A function to run the getRepeatDepositionData function with dummy data. It will send an email to me.
+//The function creates an event on the day after the script is run at 10:30AM
+function testMeeting(){
+  const date = new Date();
+  //format as 2020-01-30
+  
+  var formattedDate = date.getFullYear()+"-"+("0"+(date.getMonth()+1)).slice(-2)+"-"+("0"+(date.getDate()+1)).slice(-2);
+  Logger.log(formattedDate)
+  //try{
+    getNewDepositionData('orderedBy','prichardson0874@gmail.com','#witnessName','caseStyle',formattedDate,10,30,'AM','firm','attorney','attorneyEmail','1234567','firmAddress1','firmAddress2','city','state','zip','locationFirm','locationAddress1','locationAddress2','locationCity','locationState','locationZip','locationPhone','services','courtReporter','videographer',false,'copyAttorney','copyFirm','copyAddress1','copyAddress2','copyCity','copyState','copyZip','copyPhone','copyEmail',true,'confirmationCC','videoPlatform','salsAccount','conferenceDetails');
+ //}
+  //catch (error) {
+  //Logger.log(error);
+  //}
+}
 
 ////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////// APPLICATION DEVELOPMENT LOG ///////////////////////////
@@ -179,26 +194,12 @@ X 2. Shannon wants the confirmation of scheduling can have a CC. Need to add thi
 X 3. Enable the location to be the Zoom link in the sidebar. Sometimes they'll need to call in, sometimes they'll need a password.
 Solution: force the "Location" to have a Zoom and WebEx options, if selected, have a details Textarea created, and a SALS Zoom account field
 pop up where the person can type in the account.
+
+--- Version 1.4, Started April 30 2021 ---
+X 1. Modify how information is stored for the infrastructure relating to the sotred copy attourneys, previous locations, and previous orderers. 
+Remove the single cell storage due to google sheet limitations of 50,000 characters. 
+One of the arrays is around 49,900 characters and will no longer take any more stored information. Moving this and the other arrays into their own sheets.
+2. Fix calendar issue. Daylight savings time seems to make meetings 1 hour off of intended meeting. Need a solution that will schedule at the correct times.
+Added a function to calendar.gs that calls an API and checks if the submitted date is in daylight savings time
 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
