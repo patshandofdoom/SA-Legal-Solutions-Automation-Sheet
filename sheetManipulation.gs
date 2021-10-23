@@ -30,9 +30,17 @@ function getNewDepositionData(orderedBy,orderedByEmail, witnessName, caseStyle, 
   if (videoPlatform.length > 2) {
     locationFirm = 'via ' + videoPlatform;
   };
-  
+    //#####################
+  /*
   // Begins construction of deposition information array
   var newScheduledDepo = ['🟢 Current', depoDate, witnessName, orderedBy, orderedByEmail, caseStyle, depoTime, firm, attorney, firmAddress1, firmAddress2, city, state, zip, attorneyPhone, attorneyEmail, locationFirm, locationAddress1, locationAddress2, locationCity, locationState, locationZip, locationPhone, services, courtReporter, videographer, pip, copyAttorney, copyFirm, copyAddress1, copyAddress2, copyCity, copyState, copyZip, copyPhone,copyEmail];
+  */
+  //#####################
+
+  // Begins construction of deposition information array
+  var newScheduledDepo = ['🟢 Current', depoDate, witnessName, orderedBy, orderedByEmail, caseStyle, depoTime, firm, attorney, firmAddress1, firmAddress2, city, state, zip, attorneyPhone, attorneyEmail, locationFirm, locationAddress1, locationAddress2, locationCity, locationState, locationZip, locationPhone, services, courtReporter, videographer, pip, copyAttorney, copyFirm, copyAddress1, copyAddress2, copyCity, copyState, copyZip, copyPhone,copyEmail,,,,,conferenceDetails];
+
+  //#####################
 
   // Formats the array for Google Sheets setValue() method, calls printing function
   var formattedArray = [newScheduledDepo];
@@ -128,6 +136,12 @@ function getRepeatDepositionData(previousOrderer, witnessName, caseStyle, depoDa
   newScheduledDepo.push(copyZip); 
   newScheduledDepo.push(copyPhone);
   newScheduledDepo.push(copyEmail);
+  //#####################
+  newScheduledDepo.push();
+  newScheduledDepo.push();
+  newScheduledDepo.push();
+  newScheduledDepo.push(conferenceDetails);
+  //#####################
   
   // Formats the array for Google Sheets setValue() method, calls printing function
   var formattedArray = [newScheduledDepo];
@@ -525,7 +539,7 @@ function printNewDeposition (array) {
   
   // Create an empty row for the new deposition at the top of the sheet, shift others down by 1, print to the new row
   scheduleSheet.insertRowBefore(2);
-  scheduleSheet.getRange(2, 1, 1, 36).setValues(array);
+  scheduleSheet.getRange(2, 1, 1, array[0].length).setValues(array);
 };
 
 /** Takes the most recently-scheduled depo by an orderer and returns an array with the lawyer and firm information.

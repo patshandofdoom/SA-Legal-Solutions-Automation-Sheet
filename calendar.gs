@@ -1,3 +1,4 @@
+
 ////////////////////////////////////////////////////////////////////////////////////
 ///////////////// INTERACTIONS BETWEEN SHEET AND SERVICES CALENDAR /////////////////
 ////////////////////////////////////////////////////////////////////////////////////
@@ -6,7 +7,8 @@
 @params {multiple} Received from getNewDepositionData in the sheetManipulation module.
 */
 function addEvent(orderedBy, witnessName, caseStyle, depoDate, depoHour, depoMinute, amPm, firm, attorney, firmAddress1, firmAddress2, city, state, zip, locationFirm, locationAddress1, locationAddress2, locationCity, locationState, locationZip, services, courtReporter, videographer, pip, videoPlatform, salsAccount, conferenceDetails) {
-  var SACal = CalendarApp.getCalendarById('salegalsolutions.com_17vfv1akbq03ro6jvtsre0rv84@group.calendar.google.com');
+  var SACal = CalendarApp.getCalendarById('5i0he4t28duovfl8grl3r6g6d8@group.calendar.google.com');
+  Logger.log(SACal.getName());
   var ss = SpreadsheetApp.getActive();
   var depoSheet = ss.getSheetByName('Schedule a depo');
   
@@ -31,6 +33,9 @@ function addEvent(orderedBy, witnessName, caseStyle, depoDate, depoHour, depoMin
     var formattedHours = to24Format(depoHour, depoMinute, amPm, depoDate);
     var formattedDateAndHour = formattedDate + ' ' + formattedHours;
     
+    Logger.log(formattedDateAndHour);
+    Logger.log(new Date(formattedDateAndHour))
+
     var event = SACal.createEvent(title, 
                                   new Date(formattedDateAndHour),
                                   new Date(formattedDateAndHour),{
@@ -59,7 +64,7 @@ function manuallyUpdateCalendar(e) {
     var lock = LockService.getDocumentLock();
     lock.waitLock(6000);
     
-    var SACal = CalendarApp.getCalendarById('salegalsolutions.com_17vfv1akbq03ro6jvtsre0rv84@group.calendar.google.com');
+    var SACal = CalendarApp.getCalendarById('5i0he4t28duovfl8grl3r6g6d8@group.calendar.google.com');
     var ss = SpreadsheetApp.getActive();
     var depoSheet = ss.getSheetByName('Schedule a depo');
     
@@ -69,7 +74,9 @@ function manuallyUpdateCalendar(e) {
       
       // If yes, get information about the edit made
       var editRow = e.range.getRow();
+      Logger.log("row "+editRow+" was edited");
       var editColumn = e.range.getColumn();
+      Logger.log("column "+editColumn+" was edited");
       
       /////////////////////////////////////////////////
       // ROUTING BASED ON THE COLUMN THAT WAS EDITED //
@@ -116,6 +123,7 @@ function manuallyUpdateCalendar(e) {
         case (25):
         case (26):
         case (27):
+        case (41):
           editDepoGeneral(e, ss, SACal, depoSheet, editColumn, editRow);
           break;
           
@@ -150,10 +158,26 @@ function editDepoDate(e, ss, SACal, depoSheet, editColumn, editRow) {
   
   // Tries to update Services calendar, alerts user with result.
   try {
+
+    //#####################################
+    //calls a function which builds all the strings for the event. returns [title,location,description]
+    //@param {editRow} number Row in Schedule a depo Sheet that's been edited.
+    var eventstrings = buildEventStrings(editRow);
+
+    // Deletes old event and adds a new one at the correct date.
+    var title = eventstrings[0];
+    var location = eventstrings[1];
+    var description = eventstrings[2];
+    //#####################################
+    /*
     // Deletes old event and adds a new one at the correct date.
     var title = SACal.getEventById(eventId).getTitle();
     var description = SACal.getEventById(eventId).getDescription();
     var location = SACal.getEventById(eventId).getLocation();
+    */
+    //#####################################
+
+
     SACal.getEventById(eventId).deleteEvent();
     var event = SACal.createEvent(title, newTime, newTime,{ description: description, location: location });
     
@@ -194,10 +218,24 @@ function editDepoTime(e, ss, SACal, depoSheet, editColumn, editRow) {
     
     // Tries to update Services calendar, alerts user with result.
     try {
+
+      //#####################################
+      //calls a function which builds all the strings for the event. returns [title,location,description]
+      //@param {editRow} number Row in Schedule a depo Sheet that's been edited.
+      var eventstrings = buildEventStrings(editRow);
+
       // Deletes old event and adds a new one at the correct time.
+      var title = eventstrings[0];
+      var location = eventstrings[1];
+      var description= eventstrings[2];
+      //#####################################
+      /*
       var title = SACal.getEventById(eventId).getTitle();
       var description = SACal.getEventById(eventId).getDescription();
       var location = SACal.getEventById(eventId).getLocation();
+      */
+      //#####################################
+
       SACal.getEventById(eventId).deleteEvent();
       var event = SACal.createEvent(title, newTime, newTime,{ description: description, location: location });
       
@@ -230,6 +268,26 @@ function editDepoGeneral(e, ss, SACal, depoSheet, editColumn, editRow) {
       intDayNumber++;
     };
     
+    //###################################
+    //calls a function which builds all the strings for the event. returns [title,location,description]
+    //@param {editRow} number Row in Schedule a depo Sheet that's been edited.
+    var eventstrings = buildEventStrings(editRow);
+    var title = eventstrings[0];
+    var depoLocation= eventstrings[1];
+    var description = eventstrings[2];
+
+    //building the date from gathered data
+    var monthNumber = monthToMm(rawDepoDate.substring(4, 7));
+    var dayNumber = intDayNumber.toString();
+    var yearNumber = rawDepoDate.substring(11, 15);
+    var dashDate = yearNumber + '-' + monthNumber + '-' + dayNumber;
+    var formattedDate = toStringDate(dashDate);
+    var depoTime = amPmTo24(depoSheet.getRange(editRow, 7).getValue());
+
+    var formattedDateAndHour = formattedDate + ' ' + depoTime;
+
+    //###################################
+    /*
     var services = depoSheet.getRange(editRow, 24).getValue();
     var firm = depoSheet.getRange(editRow, 8).getValue();
     var witnessName = depoSheet.getRange(editRow, 3).getValue();
@@ -257,12 +315,14 @@ function editDepoGeneral(e, ss, SACal, depoSheet, editColumn, editRow) {
     var city = depoSheet.getRange(editRow, 12).getValue(); 
     var state = depoSheet.getRange(editRow, 13).getValue(); 
     var zip = depoSheet.getRange(editRow, 14).getValue(); 
-    
+
     // Creates event title and description.
     var title = '(' + services + ')' + ' ' + firm + ' - ' + witnessName;
     var depoLocation = locationFirm + ', ' + locationAddress1 + ' ' + locationAddress2 + ', ' + locationCity + ' ' + locationState + ' ' + locationZip;
     var description = 'Witness Name: ' + witnessName + '\nCase Style: ' + caseStyle + '\nOrdered by: ' + orderedBy + '\n\nCSR: ' + courtReporter + '\nVideographer: ' + videographer + '\nPIP: ' + pip + '\n\nLocation: ' + '\n' + depoLocation + '\n\nOur client:\n' + attorney + '\n' + firm + '\n' + firmAddress1 + ' ' + firmAddress2 + '\n' + city + ' ' + state + ' ' + zip;
-    
+    */
+    //###################################
+
     // Adds the newly-updated deposition event to the Services calendar.
     var event = SACal.createEvent(title, 
        new Date(formattedDateAndHour),
@@ -270,7 +330,7 @@ function editDepoGeneral(e, ss, SACal, depoSheet, editColumn, editRow) {
          description: description,
          location: depoLocation
          });
-
+    
     // Deletes the old event in the Services Calendar.
     SACal.getEventById(eventId).deleteEvent();
     
@@ -390,6 +450,109 @@ function syncWithCurrentList(editRow, editColumn) {
  
 };
 
+//###################
+/**Builds the event description 
+@param {editrow} number Row in Schedule a depo Sheet that's been edited.
+returns a string description 
+*/
+function testEventStrings(){
+  buildEventStrings(2);
+}
+
+function buildEventStrings(editRow){
+  var ss = SpreadsheetApp.getActive();
+  var depoSheet = ss.getSheetByName('Schedule a depo');
+  var depoArray = depoSheet.getRange(editRow,1,1,depoSheet.getLastColumn()).getValues();
+
+  //General information from the deposition that is used to build the description
+  var services = depoArray[0][23];
+  var firm = depoArray[0][7];
+  var witnessName = depoArray[0][2];
+  var orderedBy =  depoArray[0][3];
+  var caseStyle = depoArray[0][5];
+  var courtReporter =  depoArray[0][24];
+  var videographer =  depoArray[0][25];
+  var pip = depoArray[0][26];
+  var eventID = depoArray[0][36];
+  var conferenceDetails = depoArray[0][40];
+
+  //grabs attourney info to place into the description
+  var attorney = depoArray[0][8];
+  var firmAddress1 = depoArray[0][9];
+  var firmAddress2 = depoArray[0][10];
+  var city = depoArray[0][11];
+  var state = depoArray[0][12];
+  var zip = depoArray[0][13];
+
+  //grabs info for the location of the deposition. this is placed in the location of the event
+  var locationFirm = depoArray[0][16];
+  var locationAddress1 = depoArray[0][17];
+  var locationAddress2 = depoArray[0][18];
+  var locationCity = depoArray[0][19];
+  var locationState = depoArray[0][20];
+  var locationZip = depoArray[0][21];
+
+  // Queries the existing event description and location and gathers info that we need to re-build them for the new event
+  // @param {eventID} string, grabbed from "Schedule a Depo" sheet
+  // returns [Location data, Video Conference Details]
+  var eventDetails = getVideoEventDescription(eventID);
+
+  var currentEventDetails = eventDetails[1];
+
+  // Creates event title and description.
+  var title = '(' + services + ')' + ' ' + firm + ' - ' + witnessName;
+  
+  // Builds location and description based on whether it's a video conference or not
+  let depoLocation, description;
+
+  if (locationAddress1=="" &&locationAddress2=="") {
+    Logger.log("online meeting");
+    
+    if(currentEventDetails=="Videoconference details missing"){
+     
+      Browser.msgBox('Videoconference details missing', 'Since "Location Address 1"	and "Location Address 2" are blank and the current meeting does not have "Video Conference Details", it appears that you are trying to change this event from an in-person meeting to a videoconference. Please add the Videoconference Details to the sheet in column AO once the current change is complete.', Browser.Buttons.OK);
+
+      Logger.log("meeting changed from in person to online");
+    }
+      depoLocation = locationFirm + ' ( )';
+      description = 'Witness Name: ' + witnessName + '\nCase Style: ' + caseStyle + '\nOrdered by: ' + orderedBy + '\n\nCSR: ' + courtReporter + '\nVideographer: ' + videographer + '\nPIP: ' + pip + '\n\nVideo Conference Details: ' + '\n' + conferenceDetails + '\n\nOur client:\n' + attorney + '\n' + firm + '\n' + firmAddress1 + ' ' + firmAddress2 + '\n' + city + ' ' + state + ' ' + zip;
+    
+  } else {
+    Logger.log("in person meeting");
+    depoLocation = locationFirm + ', ' + locationAddress1 + ' ' + locationAddress2 + ', ' + locationCity + ' ' + locationState + ' ' + locationZip;
+    description = 'Witness Name: ' + witnessName + '\nCase Style: ' + caseStyle + '\nOrdered by: ' + orderedBy + '\n\nCSR: ' + courtReporter + '\nVideographer: ' + videographer + '\nPIP: ' + pip + '\n\nLocation: ' + '\n' + depoLocation + '\n\nOur client:\n' + attorney + '\n' + firm + '\n' + firmAddress1 + ' ' + firmAddress2 + '\n' + city + ' ' + state + ' ' + zip;
+  };
+
+
+  var returnvariable = [title, depoLocation, description];
+  //Logger.log(returnvariable);
+  //Logger.log(returnvariable[2]);
+  return returnvariable;
+};
+
+
+//A function where you pass in the event ID for a calendar event and it returns the video conference details as an array []
+//@param {eventID} string passed in from the function calling it. Grabbed from the sheet
+//returns [Location data, Video Conference Details]
+function getVideoEventDescription(eventID){
+  if(eventID==""){
+    return ["Event Location Missing","Videoconference details missing"];
+  } else {
+    var SACal = CalendarApp.getCalendarById('5i0he4t28duovfl8grl3r6g6d8@group.calendar.google.com');
+    var eventDescription = SACal.getEventById(eventID).getDescription();
+    var eventLocation = SACal.getEventById(eventID).getLocation();
+
+    if(eventDescription.lastIndexOf("Video Conference Details:")<0){
+      var newDescription="Videoconference details missing";
+    }else{
+      var newDescription = eventDescription.substring(
+        eventDescription.lastIndexOf("Video Conference Details:") + 26, 
+        eventDescription.lastIndexOf("Our client:")
+      );
+    }
+    return [eventLocation, newDescription];
+  }
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -431,6 +594,7 @@ function daylightSavingsTime(date){
   }else{
     var daylightTime = 'CST';
   }
+  Logger.log(daylightTime);
   return daylightTime;
 }
 
@@ -615,7 +779,7 @@ function seeCalendars () {
 Note: This can usually execute ~400 rows per run before exceeding maximum allowable execution time.
 */
 function addIds() {
-  var SACal = CalendarApp.getCalendarById('salegalsolutions.com_17vfv1akbq03ro6jvtsre0rv84@group.calendar.google.com');
+  var SACal = CalendarApp.getCalendarById('5i0he4t28duovfl8grl3r6g6d8@group.calendar.google.com');
   var ss = SpreadsheetApp.getActive();
   var depoSheet = ss.getSheetByName('Schedule a depo');
   
@@ -701,3 +865,4 @@ function daylightSavingsWeeklyUpdate(){
   });
   Logger.log(properties.getProperty('daylightEnd'))
 }
+
