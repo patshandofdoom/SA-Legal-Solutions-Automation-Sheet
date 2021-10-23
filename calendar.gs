@@ -168,15 +168,16 @@ function editDepoDate(e, ss, SACal, depoSheet, editColumn, editRow) {
     var title = eventstrings[0];
     var location = eventstrings[1];
     var description = eventstrings[2];
-    //#####################################
     /*
+    //#####################################
+
     // Deletes old event and adds a new one at the correct date.
     var title = SACal.getEventById(eventId).getTitle();
     var description = SACal.getEventById(eventId).getDescription();
     var location = SACal.getEventById(eventId).getLocation();
-    */
-    //#####################################
 
+    //#####################################
+    */
 
     SACal.getEventById(eventId).deleteEvent();
     var event = SACal.createEvent(title, newTime, newTime,{ description: description, location: location });
@@ -228,17 +229,21 @@ function editDepoTime(e, ss, SACal, depoSheet, editColumn, editRow) {
       var title = eventstrings[0];
       var location = eventstrings[1];
       var description= eventstrings[2];
-      //#####################################
+
       /*
+      //#####################################
+
       var title = SACal.getEventById(eventId).getTitle();
       var description = SACal.getEventById(eventId).getDescription();
       var location = SACal.getEventById(eventId).getLocation();
-      */
-      //#####################################
 
+      //#####################################
+      */
+      
+      // Deletes old event and adds a new one at the correct time.
       SACal.getEventById(eventId).deleteEvent();
       var event = SACal.createEvent(title, newTime, newTime,{ description: description, location: location });
-      
+
       // Add new eventId to the Schedule a depo Sheet.
       depoSheet.getRange(editRow, 37).setValue(event.getId());
       ss.toast('✅ Services Calendar Updated Successfully');
@@ -267,7 +272,8 @@ function editDepoGeneral(e, ss, SACal, depoSheet, editColumn, editRow) {
     if (rawDepoDate.substring(16, 18) == "23") {
       intDayNumber++;
     };
-    
+
+
     //###################################
     //calls a function which builds all the strings for the event. returns [title,location,description]
     //@param {editRow} number Row in Schedule a depo Sheet that's been edited.
@@ -286,8 +292,9 @@ function editDepoGeneral(e, ss, SACal, depoSheet, editColumn, editRow) {
 
     var formattedDateAndHour = formattedDate + ' ' + depoTime;
 
-    //###################################
     /*
+    //###################################
+  
     var services = depoSheet.getRange(editRow, 24).getValue();
     var firm = depoSheet.getRange(editRow, 8).getValue();
     var witnessName = depoSheet.getRange(editRow, 3).getValue();
@@ -316,12 +323,15 @@ function editDepoGeneral(e, ss, SACal, depoSheet, editColumn, editRow) {
     var state = depoSheet.getRange(editRow, 13).getValue(); 
     var zip = depoSheet.getRange(editRow, 14).getValue(); 
 
+    //###################################
+    */
     // Creates event title and description.
     var title = '(' + services + ')' + ' ' + firm + ' - ' + witnessName;
     var depoLocation = locationFirm + ', ' + locationAddress1 + ' ' + locationAddress2 + ', ' + locationCity + ' ' + locationState + ' ' + locationZip;
     var description = 'Witness Name: ' + witnessName + '\nCase Style: ' + caseStyle + '\nOrdered by: ' + orderedBy + '\n\nCSR: ' + courtReporter + '\nVideographer: ' + videographer + '\nPIP: ' + pip + '\n\nLocation: ' + '\n' + depoLocation + '\n\nOur client:\n' + attorney + '\n' + firm + '\n' + firmAddress1 + ' ' + firmAddress2 + '\n' + city + ' ' + state + ' ' + zip;
-    */
+
     //###################################
+
 
     // Adds the newly-updated deposition event to the Services calendar.
     var event = SACal.createEvent(title, 
@@ -553,6 +563,57 @@ function getVideoEventDescription(eventID){
     return [eventLocation, newDescription];
   }
 }
+
+/**Builds the event description 
+@param {editrow} number Row in Schedule a depo Sheet that's been edited.
+returns a string description 
+*/
+function testEventStrings(){
+  buildEventStrings(1);
+}
+
+function buildEventStrings(editRow){
+  var ss = SpreadsheetApp.getActive();
+  var depoSheet = ss.getSheetByName('Schedule a depo');
+  var depoArray = depoSheet.getRange(editRow,1,1,depoSheet.getLastColumn()).getValues();
+
+  //General information from the deposition that is used to build the description
+  var services = depoArray[0][23];
+  var firm = depoArray[0][7];
+  var witnessName = depoArray[0][2];
+  var orderedBy =  depoArray[0][3];
+  var caseStyle = depoArray[0][5];
+  var courtReporter =  depoArray[0][24];
+  var videographer =  depoArray[0][25];
+  var pip = depoArray[0][26];
+
+  //grabs attourney info to place into the description
+  var attorney = depoArray[0][8];
+  var firmAddress1 = depoArray[0][9];
+  var firmAddress2 = depoArray[0][10];
+  var city = depoArray[0][11];
+  var state = depoArray[0][12];
+  var zip = depoArray[0][13];
+
+  //grabs info for the location of the deposition. this is placed in the location of the event
+  var locationFirm = depoArray[0][16];
+  var locationAddress1 = depoArray[0][17];
+  var locationAddress2 = depoArray[0][18];
+  var locationCity = depoArray[0][19];
+  var locationState = depoArray[0][20];
+  var locationZip = depoArray[0][21];
+
+    
+  // Creates event title and description.
+  var title = '(' + services + ')' + ' ' + firm + ' - ' + witnessName;
+  var depoLocation = locationFirm + ', ' + locationAddress1 + ' ' + locationAddress2 + ', ' + locationCity + ' ' + locationState + ' ' + locationZip;
+  var description = 'Witness Name: ' + witnessName + '\nCase Style: ' + caseStyle + '\nOrdered by: ' + orderedBy + '\n\nCSR: ' + courtReporter + '\nVideographer: ' + videographer + '\nPIP: ' + pip + '\n\nLocation: ' + '\n' + depoLocation + '\n\nOur client:\n' + attorney + '\n' + firm + '\n' + firmAddress1 + ' ' + firmAddress2 + '\n' + city + ' ' + state + ' ' + zip;
+
+  var returnvariable = [title, depoLocation, description];
+  //Logger.log(returnvariable);
+  //Logger.log(returnvariable[2])
+  return returnvariable;
+};
 
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -865,4 +926,3 @@ function daylightSavingsWeeklyUpdate(){
   });
   Logger.log(properties.getProperty('daylightEnd'))
 }
-
